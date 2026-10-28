@@ -29,6 +29,9 @@ dp = Dispatcher()
 TEMP_DIR = "temp_audio"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
+# Audio fayl kengaytmalari (Filtrlash uchun)
+AUDIO_EXTENSIONS = (".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac")
+
 # Foydalanuvchilar xotirasi (RAM - baza shart emas)
 user_languages: dict[int, str] = {}
 folder_cache: dict[str, list[tuple[str, str]]] = {}
@@ -56,6 +59,10 @@ TEXTS = {
         "not_drive": "⚠️ QR kod o'qildi, ammo u Google Drive havolasi emas:\n`{url}`",
         "downloading": "⏳ Audio fayl yuklab olinmoqda...",
         "download_error": "❌ Audio faylni yuklab olishda xatolik yuz berdi. Havola yopiq yoki fayl mavjud emas.",
+        "no_audio_found": (
+            "⚠️ Ushbu QR kodda audio darslik topilmadi.\n"
+            "Iltimos, faqat kitobdagi audio darslarga oid QR kodlarni yuboring."
+        ),
         "too_large": "⚠️ Fayl hajmi juda katta ({size:.1f} MB).\nTelegram bot faqat 50 MB gacha fayl jo'nata oladi.",
         "uploading": "📤 Audio Telegram'ga yuklanmoqda...",
         "caption": "🎧 «Miftahul Arabiyya» {name} | Habib Academy",
@@ -68,7 +75,7 @@ TEXTS = {
             "ℹ️ **Habib Academy Bot**\n\n"
             "Ushbu bot «Miftahul Arabiyya» arab tili darsligi uchun mo'ljallangan.\n"
             "Kitobdagi QR kod rasmini jo'natsangiz, bot Google Drive'dan kerakli audio darsliklarni "
-            "avtomatik topib, sizga audio formatida taqdim etadi.\n\n"
+            "avtomatik saralab, sizga audio formatida taqdim etadi.\n\n"
             "📌 **Buyruqlar:**\n"
             "/start — Botni qayta ishga tushirish\n"
             "/lang — Muloqot tilini o'zgartirish\n"
@@ -95,6 +102,10 @@ TEXTS = {
         "not_drive": "⚠️ QR kod öqildi, ammo u Google Drive havolasi emas:\n`{url}`",
         "downloading": "⏳ Audio fayl yuklab olinmoqda...",
         "download_error": "❌ Audio faylni yuklab olişda xatolik yuz berdi. Havola yopiq yoki fayl mavjud emas.",
+        "no_audio_found": (
+            "⚠️ Uşbu QR kodda audio darslik topilmadi.\n"
+            "Iltimos, faqat kitobdagi audio darslarga oid QR kodlarni yuboring."
+        ),
         "too_large": "⚠️ Fayl hajmi juda katta ({size:.1f} MB).\nTelegram bot faqat 50 MB gaça fayl jönata oladi.",
         "uploading": "📤 Audio Telegramga yuklanmoqda...",
         "caption": "🎧 «Miftahul Arabiyya» {name} | Habib Academy",
@@ -107,7 +118,7 @@ TEXTS = {
             "ℹ️ **Habib Academy Bot**\n\n"
             "Uşbu bot «Miftahul Arabiyya» arab tili darsligi uçun möljallangan.\n"
             "Kitobdagi QR kod rasmini jönatsangiz, bot Google Driveʼdan kerakli audio darsliklarni "
-            "avtomatik topib, sizga audio formatida taqdim etadi.\n\n"
+            "avtomatik saralab, sizga audio formatida taqdim etadi.\n\n"
             "📌 **Buyruqlar:**\n"
             "/start — Botni qayta işga tuşiriş\n"
             "/lang — Muloqot tilini özgartiriş\n"
@@ -134,6 +145,10 @@ TEXTS = {
         "not_drive": "⚠️ QR код ўқилди, аммо у Google Drive ҳаволаси эмас:\n`{url}`",
         "downloading": "⏳ Аудио файл юклаб олинмоқда...",
         "download_error": "❌ Аудио файлни юклаб олишда хатолик юз берди. Ҳавола ёпиқ ёки файл мавжуд эмас.",
+        "no_audio_found": (
+            "⚠️ Ушбу QR кодда аудио дарслик топилмади.\n"
+            "Илтимос, фақат китобдаги аудио дарсларга оид QR кодларни юборинг."
+        ),
         "too_large": "⚠️ Файл ҳажми жуда катта ({size:.1f} MB).\nTelegram бот фақат 50 MB гача файл жўната олади.",
         "uploading": "📤 Аудио Telegram'га юкланмоқда...",
         "caption": "🎧 «Мифтаҳул Арабийя» {name} | Habib Academy",
@@ -146,7 +161,7 @@ TEXTS = {
             "ℹ️ **Habib Academy Bot**\n\n"
             "Ушбу бот «Мифтаҳул Арабийя» араб тили дарслиги учун мўлжалланган.\n"
             "Китобдаги QR код расмини жўнатсангиз, бот Google Drive'дан керакли аудио дарсликларни "
-            "автоматик топиб, сизга аудио форматида тақдим этади.\n\n"
+            "автоматик саралаб, сизга аудио форматида тақдим этади.\n\n"
             "📌 **Буйруқлар:**\n"
             "/start — Ботни қайта ишга тушириш\n"
             "/lang — Мулоқот тилини ўзгартириш\n"
@@ -172,6 +187,10 @@ TEXTS = {
         "not_drive": "⚠️ QR-код распознан, но ссылка не ведет на Google Drive:\n`{url}`",
         "downloading": "⏳ Аудиофайл скачивается...",
         "download_error": "❌ Ошибка при скачивании файла. Ссылка недоступна или файл удален.",
+        "no_audio_found": (
+            "⚠️ В этом QR-коде не найдено аудиоуроков.\n"
+            "Пожалуйста, отправляйте только QR-коды аудиоуроков из учебника."
+        ),
         "too_large": "⚠️ Файл слишком большой ({size:.1f} МБ).\nTelegram-бот может отправлять файлы только до 50 МБ.",
         "uploading": "📤 Аудиофайл отправляется в Telegram...",
         "caption": "🎧 Аудиоурок «Мифтахуль Арабийя» {name} | Habib Academy",
@@ -183,8 +202,8 @@ TEXTS = {
         "info": (
             "ℹ️ **Habib Academy Bot**\n\n"
             "Этот бот создан для учебника арабского языка «Мифтахуль Арабийя».\n"
-            "Отправьте фото QR-кода из книги, и бот автоматически загрузит аудиоуроки с Google Drive "
-            "в удобном аудиоформате.\n\n"
+            "Отправьте фото QR-кода из книги, и бот автоматически отфильтрует и загрузит "
+            "аудиоуроки с Google Drive в удобном формате.\n\n"
             "📌 **Команды:**\n"
             "/start — Перезапустить бота\n"
             "/lang — Сменить язык\n"
@@ -210,6 +229,10 @@ TEXTS = {
         "not_drive": "⚠️ QR code decoded, but it is not a Google Drive link:\n`{url}`",
         "downloading": "⏳ Downloading audio file...",
         "download_error": "❌ Error downloading audio file. Link may be private or unavailable.",
+        "no_audio_found": (
+            "⚠️ No audio lessons found in this QR code.\n"
+            "Please send only audio lesson QR codes from the textbook."
+        ),
         "too_large": "⚠️ File size is too large ({size:.1f} MB).\nTelegram bots can only send files up to 50 MB.",
         "uploading": "📤 Uploading audio to Telegram...",
         "caption": "🎧 'Miftahul Arabiyya' {name} | Habib Academy",
@@ -221,8 +244,8 @@ TEXTS = {
         "info": (
             "ℹ️ **Habib Academy Bot**\n\n"
             "This bot is designed for the 'Miftahul Arabiyya' Arabic textbook.\n"
-            "Send a photo of any audio QR code from the book, and the bot will fetch the audio "
-            "lessons from Google Drive and send them to you directly.\n\n"
+            "Send a photo of any audio QR code from the book, and the bot will filter and fetch "
+            "the audio lessons from Google Drive directly.\n\n"
             "📌 **Commands:**\n"
             "/start — Restart bot\n"
             "/lang — Change language\n"
@@ -248,6 +271,10 @@ TEXTS = {
         "not_drive": "⚠️ تم قراءة رمز QR، لكنه ليس رابط Google Drive:\n`{url}`",
         "downloading": "⏳ جاري تحميل الملف الصوتي...",
         "download_error": "❌ حدث خطأ أثناء تحميل الملف. قد يكون الرابط مغلقاً أو الملف غير متاح.",
+        "no_audio_found": (
+            "⚠️ لم يتم العثور على دروس صوتية في هذا الرمز.\n"
+            "يرجى إرسال رموز QR الخاصة بالدروس الصوتية من الكتاب فقط."
+        ),
         "too_large": "⚠️ حجم الملف كبير جداً ({size:.1f} ميغابايت).\nالحد الأقصى لملفات البوت هو 50 ميغابايت.",
         "uploading": "📤 جاري رفع الملف الصوتي إلى تيليجرام...",
         "caption": "🎧 درس صوتي «مفتاح العربية» {name} | Habib Academy",
@@ -259,7 +286,7 @@ TEXTS = {
         "info": (
             "ℹ️ **بوت Habib Academy**\n\n"
             "تم تصميم هذا البوت لكتاب «مفتاح العربية» لتعليم اللغة العربية.\n"
-            "أرسل صورة أي رمز QR من الكتاب وسيقوم البوت تلقائياً بتنزيل الدروس الصوتية "
+            "أرسل صورة أي رمز QR من الكتاب وسيقوم البوت تلقائياً بتصفية وتنزيل الدروس الصوتية "
             "من Google Drive وإرسالها لك مباشرة.\n\n"
             "📌 **الأوامر:**\n"
             "/start — إعادة تشغيل البوت\n"
@@ -306,12 +333,6 @@ def get_folder_keyboard(folder_id: str, file_list: list[tuple[str, str]], lang: 
 # QR KODNI ANIQLASH (ULTRA-ROBUST QR DECODER)
 # ==========================================
 def decode_qr(image_bytes: bytes) -> str | None:
-    """
-    Rasmdan QR kodni o'qiydi.
-    1. zxing-cpp — Jahon standarti (ZXing dvigateli), xira, sariq qog'oz, qiyshiq
-       va shovqinli kitob fotosuratlarini ham osonlik bilan o'qiydi.
-    2. OpenCV — Zaxira (fallback) sifatida bir nechta maxsus filtrlar bilan.
-    """
     # 1. zxing-cpp orqali o'qish (eng kuchli va tezkor skaner)
     try:
         import zxingcpp
@@ -363,9 +384,43 @@ def decode_qr(image_bytes: bytes) -> str | None:
 
 
 # ==========================================
-# GOOGLE DRIVE PAPKA VA FAYLLARNI QAYTA ISHLASH
+# AUDIO FORMATINI TEKSHIRISH (MAGIC BYTES)
+# ==========================================
+def check_is_audio(file_path: str, content_type: str = "") -> bool:
+    """Fayl haqiqiy audio ekanligini Content-Type va fayl boshidagi baytlar orqali tekshiradi"""
+    if content_type and ("audio" in content_type.lower() or "application/ogg" in content_type.lower()):
+        return True
+    try:
+        with open(file_path, "rb") as f:
+            header = f.read(16)
+            # MP3 (ID3 yoki syncword \xff\xfb, \xff\xf3, \xff\xf2)
+            if header.startswith(b"ID3") or header.startswith(b"\xff\xfb") or header.startswith(b"\xff\xf3") or header.startswith(b"\xff\xf2"):
+                return True
+            # WAV (RIFF....WAVE)
+            if header.startswith(b"RIFF") and b"WAVE" in header:
+                return True
+            # M4A / AAC (ftyp)
+            if b"ftyp" in header:
+                return True
+            # OGG (OggS)
+            if header.startswith(b"OggS"):
+                return True
+            # FLAC (fLaC)
+            if header.startswith(b"fLaC"):
+                return True
+    except Exception:
+        pass
+    return False
+
+
+# ==========================================
+# GOOGLE DRIVE PAPKA VA FAYLLARNI SARALASH (FILTER)
 # ==========================================
 def parse_drive_url(url: str):
+    """
+    Google Drive havolasini tekshiradi va FAQAT AUDIO fayllarni saralab oladi.
+    Begona fayllar (PDF, video, arxiv, rasm) tashlab ketiladi.
+    """
     m = re.search(r'id=([a-zA-Z0-9_-]{25,})', url)
     if not m:
         m = re.search(r'/(?:folders|file/d)/([a-zA-Z0-9_-]{25,})', url)
@@ -391,6 +446,7 @@ def parse_drive_url(url: str):
         print("URL tekshirishda xatolik:", e)
         return "file", drive_id, "audio.mp3", [(drive_id, "audio.mp3")]
 
+    # Agar havola papka bo'lsa
     if "folders" in final_url or "folders" in url:
         m_title = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE)
         folder_title = "Darslik"
@@ -400,24 +456,35 @@ def parse_drive_url(url: str):
         items = re.findall(r'data-id="([a-zA-Z0-9_-]{25,})"[^>]*data-tooltip="([^"]+)"', html)
         file_list = []
         for fid, tooltip in items:
-            clean_name = tooltip.replace(" Audio", "").strip()
-            file_list.append((fid, clean_name))
+            # FAQAT audio fayllarni saralab olamiz
+            is_audio = "Audio" in tooltip or any(tooltip.lower().endswith(ext) or ext in tooltip.lower() for ext in AUDIO_EXTENSIONS)
+            if is_audio:
+                clean_name = tooltip.replace(" Audio", "").strip()
+                file_list.append((fid, clean_name))
 
         if not file_list:
             items2 = re.findall(r'data-id="([a-zA-Z0-9_-]{25,})".*?<strong class="[^"]*">([^<]+)</strong>', html)
             for fid, name in items2:
-                file_list.append((fid, name.strip()))
+                if any(name.lower().endswith(ext) for ext in AUDIO_EXTENSIONS):
+                    file_list.append((fid, name.strip()))
 
+        # Agar papkada birorta ham audio topilmasa, bo'sh ro'yxat qaytaramiz
         return "folder", drive_id, folder_title, file_list
     else:
+        # Bitta alohida fayl
         m_title = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE)
         file_title = "audio.mp3"
         if m_title:
             file_title = m_title.group(1).split("–")[0].split("-")[0].strip()
+
         return "file", drive_id, file_title, [(drive_id, file_title)]
 
 
-def download_drive_file(file_id: str, output_path: str) -> bool:
+def download_drive_file(file_id: str, output_path: str) -> tuple[bool, str]:
+    """
+    Faylni yuklab oladi va haqiqiy audio ekanligini tekshiradi.
+    (Muvaffaqiyatli_yuklandimi, Xatolik_sababi)
+    """
     download_urls = [
         f"https://drive.usercontent.google.com/download?id={file_id}&export=download&authuser=0",
         f"https://drive.google.com/uc?id={file_id}&export=download",
@@ -431,17 +498,24 @@ def download_drive_file(file_id: str, output_path: str) -> bool:
             req = urllib.request.Request(u, headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
                 if resp.status == 200:
+                    content_type = resp.headers.get("Content-Type", "")
                     with open(output_path, "wb") as f:
                         while True:
                             chunk = resp.read(64 * 1024)
                             if not chunk:
                                 break
                             f.write(chunk)
+                    
                     if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-                        return True
+                        # AUDIO FILTRI: Haqiqatan ham audio ekanligini tekshiramiz
+                        if not check_is_audio(output_path, content_type):
+                            if os.path.exists(output_path):
+                                os.remove(output_path)
+                            return False, "not_audio"
+                        return True, "ok"
         except Exception:
             continue
-    return False
+    return False, "download_failed"
 
 
 # ==========================================
@@ -488,10 +562,12 @@ async def process_drive_url(user_id: int, url: str, status_msg: Message):
     loop = asyncio.get_event_loop()
     kind, item_id, title, files = await loop.run_in_executor(None, parse_drive_url, url)
 
+    # Agar papka bo'sh bo'lsa yoki audio fayl umuman bo'lmasa
     if not files:
-        await status_msg.edit_text(get_text(user_id, "download_error"))
+        await status_msg.edit_text(get_text(user_id, "no_audio_found"))
         return
 
+    # Agar bir nechta audio fayllar bo'lsa (Darslik bo'limi)
     if kind == "folder" and len(files) > 1:
         folder_cache[item_id] = files
         for fid, name in files:
@@ -503,6 +579,7 @@ async def process_drive_url(user_id: int, url: str, status_msg: Message):
         await status_msg.edit_text(folder_text, reply_markup=keyboard, parse_mode="Markdown")
         return
 
+    # Agar bitta audio bo'lsa
     single_fid, single_name = files[0]
     file_names_cache[single_fid] = single_name
     await status_msg.edit_text(get_text(user_id, "downloading"))
@@ -510,10 +587,13 @@ async def process_drive_url(user_id: int, url: str, status_msg: Message):
     temp_filename = f"{uuid.uuid4().hex}.mp3"
     temp_filepath = os.path.join(TEMP_DIR, temp_filename)
 
-    success = await loop.run_in_executor(None, download_drive_file, single_fid, temp_filepath)
+    success, reason = await loop.run_in_executor(None, download_drive_file, single_fid, temp_filepath)
 
-    if not success or not os.path.exists(temp_filepath):
-        await status_msg.edit_text(get_text(user_id, "download_error"))
+    if not success:
+        if reason == "not_audio":
+            await status_msg.edit_text(get_text(user_id, "no_audio_found"))
+        else:
+            await status_msg.edit_text(get_text(user_id, "download_error"))
         return
 
     file_size_mb = os.path.getsize(temp_filepath) / (1024 * 1024)
@@ -583,10 +663,13 @@ async def cb_download_single(callback: CallbackQuery):
     temp_filepath = os.path.join(TEMP_DIR, temp_filename)
 
     loop = asyncio.get_event_loop()
-    success = await loop.run_in_executor(None, download_drive_file, fid, temp_filepath)
+    success, reason = await loop.run_in_executor(None, download_drive_file, fid, temp_filepath)
 
-    if not success or not os.path.exists(temp_filepath):
-        await callback.message.answer(get_text(user_id, "download_error"))
+    if not success:
+        if reason == "not_audio":
+            await callback.message.answer(get_text(user_id, "no_audio_found"))
+        else:
+            await callback.message.answer(get_text(user_id, "download_error"))
         return
 
     try:
@@ -614,10 +697,10 @@ async def cb_download_all(callback: CallbackQuery):
         _, _, _, files = await loop.run_in_executor(None, parse_drive_url, folder_url)
 
     if not files:
-        await callback.answer("❌ Fayllar topilmadi", show_alert=True)
+        await callback.answer(get_text(user_id, "no_audio_found"), show_alert=True)
         return
 
-    await callback.answer("⏳ Barcha fayllar yuklanmoqda...")
+    await callback.answer("⏳ Barcha audio fayllar yuklanmoqda...")
     status_msg = await callback.message.answer(f"⏳ 1/{len(files)} yuklanmoqda...")
 
     loop = asyncio.get_event_loop()
@@ -632,7 +715,7 @@ async def cb_download_all(callback: CallbackQuery):
         temp_filename = f"{uuid.uuid4().hex}.mp3"
         temp_filepath = os.path.join(TEMP_DIR, temp_filename)
 
-        success = await loop.run_in_executor(None, download_drive_file, fid, temp_filepath)
+        success, _ = await loop.run_in_executor(None, download_drive_file, fid, temp_filepath)
         if success and os.path.exists(temp_filepath):
             try:
                 audio = FSInputFile(temp_filepath, filename=name if name.endswith(".mp3") else f"{name}.mp3")
