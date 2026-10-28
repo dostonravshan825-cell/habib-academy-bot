@@ -303,28 +303,61 @@ def get_folder_keyboard(folder_id: str, file_list: list[tuple[str, str]], lang: 
 
 
 # ==========================================
-# QR KODNI ANIQLASH (ROBUST QR DECODER)
+# QR KODNI ANIQLASH (ULTRA-ROBUST QR DECODER)
 # ==========================================
 def decode_qr(image_bytes: bytes) -> str | None:
-    np_arr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    if img is None:
-        return None
+    """
+    Rasmdan QR kodni o'qiydi.
+    1. zxing-cpp — Jahon standarti (ZXing dvigateli), xira, sariq qog'oz, qiyshiq
+       va shovqinli kitob fotosuratlarini ham osonlik bilan o'qiydi.
+    2. OpenCV — Zaxira (fallback) sifatida bir nechta maxsus filtrlar bilan.
+    """
+    # 1. zxing-cpp orqali o'qish (eng kuchli va tezkor skaner)
+    try:
+        import zxingcpp
+        from PIL import Image
+        import io
 
-    detector = cv2.QRCodeDetector()
-    data, _, _ = detector.detectAndDecode(img)
-    if data:
-        return data
+        pil_img = Image.open(io.BytesIO(image_bytes))
+        barcodes = zxingcpp.read_barcodes(pil_img)
+        for b in barcodes:
+            if b.text:
+                return b.text
+    except Exception as e:
+        print(f"zxingcpp tekshiruvida: {e}")
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    data, _, _ = detector.detectAndDecode(gray)
-    if data:
-        return data
+    # 2. Agar zxingcpp topilmasa, OpenCV orqali bir necha filtrlar bilan urinib ko'ramiz
+    try:
+        np_arr = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if img is not None:
+            detector = cv2.QRCodeDetector()
 
-    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    data, _, _ = detector.detectAndDecode(thresh)
-    if data:
-        return data
+            # 2.1 Asl rangli tasvir
+            data, _, _ = detector.detectAndDecode(img)
+            if data:
+                return data
+
+            # 2.2 Kulrang (Grayscale) tasvir
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            data, _, _ = detector.detectAndDecode(gray)
+            if data:
+                return data
+
+            # 2.3 Kontrast va Otsu binarizatsiya
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            data, _, _ = detector.detectAndDecode(thresh)
+            if data:
+                return data
+
+            # 2.4 Keskinlashtirish (Sharpening - xira rasmlar uchun)
+            kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+            sharp = cv2.filter2D(gray, -1, kernel)
+            data, _, _ = detector.detectAndDecode(sharp)
+            if data:
+                return data
+    except Exception as e:
+        print(f"OpenCV tekshiruvida: {e}")
 
     return None
 
@@ -623,9 +656,9 @@ async def cb_download_all(callback: CallbackQuery):
 # ==========================================
 async def setup_bot_commands():
     commands = [
-        BotCommand(command="start", description="Qayta ishga tushirish / Start"),
-        BotCommand(command="lang", description="Tilni o'zgartirish / Change language"),
-        BotCommand(command="info", description="Bot haqida ma'lumot / Information"),
+        BotCommand(command="start", description="Qayta ishga tushirish / البدء"),
+        BotCommand(command="lang", description="Tilni tanlash / تغيير اللغة"),
+        BotCommand(command="info", description="Bot haqida ma'lumot / حول البوت"),
     ]
     try:
         await bot.set_my_commands(commands)
