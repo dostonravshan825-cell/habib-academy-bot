@@ -13,6 +13,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     CallbackQuery,
+    BotCommand,
 )
 from aiogram.filters import CommandStart, Command
 
@@ -28,7 +29,7 @@ dp = Dispatcher()
 TEMP_DIR = "temp_audio"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# Foydalanuvchilar xotirasi (RAM - hech qanday baza kerak emas)
+# Foydalanuvchilar xotirasi (RAM - baza shart emas)
 user_languages: dict[int, str] = {}
 folder_cache: dict[str, list[tuple[str, str]]] = {}
 file_names_cache: dict[str, str] = {}
@@ -37,13 +38,15 @@ file_names_cache: dict[str, str] = {}
 # KO'P TILLI MATNLAR (MULTILINGUAL TEXTS)
 # ==========================================
 TEXTS = {
+    # 1. O'zbekcha (Amaldagi Lotin)
     "uz_lat": {
         "welcome": "Assalomu alaykum! Habib Academy botiga xush kelibsiz.\n\nIltimos, tilni tanlang:",
         "lang_chosen": (
             "✅ O'zbek tili (Lotin) tanlandi.\n\n"
             "📖 «Miftahul Arabiyya» kitobidagi audio QR kodining rasmini yuboring, "
             "men sizga darslik audiosini yuklab beraman.\n\n"
-            "🔄 Tilni o'zgartirish uchun: /lang"
+            "🔄 Tilni o'zgartirish uchun: /lang\n"
+            "ℹ️ Bot haqida ma'lumot: /info"
         ),
         "scanning": "🔍 Rasm qabul qilindi, QR kod o'qilmoqda...",
         "qr_not_found": (
@@ -61,14 +64,67 @@ TEXTS = {
         "download_all_btn": "📥 Barchasini yuklab olish ({count} ta)",
         "downloading_all_progress": "⏳ Barcha darslar yuklanmoqda ({current}/{total}): {name}...",
         "all_sent": "✅ «{title}» bo'yicha barcha {total} ta audio dars jo'natildi!",
+        "info": (
+            "ℹ️ **Habib Academy Bot**\n\n"
+            "Ushbu bot «Miftahul Arabiyya» arab tili darsligi uchun mo'ljallangan.\n"
+            "Kitobdagi QR kod rasmini jo'natsangiz, bot Google Drive'dan kerakli audio darsliklarni "
+            "avtomatik topib, sizga audio formatida taqdim etadi.\n\n"
+            "📌 **Buyruqlar:**\n"
+            "/start — Botni qayta ishga tushirish\n"
+            "/lang — Muloqot tilini o'zgartirish\n"
+            "/info — Bot haqida ma'lumot\n\n"
+            "Hech qanday ma'lumotlar saqlanmaydi."
+        ),
     },
+
+    # 2. Özbekça (Yangi isloh qilingan alifbo: Ö, Ğ, Ş, Ç)
+    "uz_new": {
+        "welcome": "Assalomu alaykum! Habib Academy botiga xuş kelibsiz.\n\nIltimos, tilni tanlang:",
+        "lang_chosen": (
+            "✅ Özbek tili (Yangi alifbo) tanlandi.\n\n"
+            "📖 «Miftahul Arabiyya» kitobidagi audio QR kodining rasmini yuboring, "
+            "men sizga darslik audiosini yuklab beraman.\n\n"
+            "🔄 Tilni özgartiriş uçun: /lang\n"
+            "ℹ️ Bot haqida maʼlumot: /info"
+        ),
+        "scanning": "🔍 Rasm qabul qilindi, QR kod öqilmoqda...",
+        "qr_not_found": (
+            "❌ Rasmdan QR kod topilmadi.\n"
+            "Iltimos, kitobdagi QR kodni yaqinroq, aniq va yaxşi yoruğlikda rasmga olib qayta yuboring."
+        ),
+        "not_drive": "⚠️ QR kod öqildi, ammo u Google Drive havolasi emas:\n`{url}`",
+        "downloading": "⏳ Audio fayl yuklab olinmoqda...",
+        "download_error": "❌ Audio faylni yuklab olişda xatolik yuz berdi. Havola yopiq yoki fayl mavjud emas.",
+        "too_large": "⚠️ Fayl hajmi juda katta ({size:.1f} MB).\nTelegram bot faqat 50 MB gaça fayl jönata oladi.",
+        "uploading": "📤 Audio Telegramga yuklanmoqda...",
+        "caption": "🎧 «Miftahul Arabiyya» {name} | Habib Academy",
+        "select_lang": "Iltimos, kerakli tilni tanlang:",
+        "folder_found": "📁 **{title}** darsligi böyiça **{count}** ta audio dars topildi.\n\nKerakli dars ustiga bosing yoki barçasini yuklab oling:",
+        "download_all_btn": "📥 Barçasini yuklab oliş ({count} ta)",
+        "downloading_all_progress": "⏳ Barça darslar yuklanmoqda ({current}/{total}): {name}...",
+        "all_sent": "✅ «{title}» böyiça barça {total} ta audio dars jönatildi!",
+        "info": (
+            "ℹ️ **Habib Academy Bot**\n\n"
+            "Uşbu bot «Miftahul Arabiyya» arab tili darsligi uçun möljallangan.\n"
+            "Kitobdagi QR kod rasmini jönatsangiz, bot Google Driveʼdan kerakli audio darsliklarni "
+            "avtomatik topib, sizga audio formatida taqdim etadi.\n\n"
+            "📌 **Buyruqlar:**\n"
+            "/start — Botni qayta işga tuşiriş\n"
+            "/lang — Muloqot tilini özgartiriş\n"
+            "/info — Bot haqida maʼlumot\n\n"
+            "Heç qanday maʼlumotlar saqlanmaydi."
+        ),
+    },
+
+    # 3. Ўзбекча (Кирилл)
     "uz_cyr": {
         "welcome": "Ассалому алайкум! Habib Academy ботига хуш келибсиз.\n\nИлтимос, тилни танланг:",
         "lang_chosen": (
             "✅ Ўзбек тили (Кирилл) танланди.\n\n"
             "📖 «Мифтаҳул Арабийя» китобидаги аудио QR код расмини юборинг, "
             "мен сизга дарслик аудиосини юклаб бераман.\n\n"
-            "🔄 Тилни ўзгартириш учун: /lang"
+            "🔄 Тилни ўзгартириш учун: /lang\n"
+            "ℹ️ Бот ҳақида маълумот: /info"
         ),
         "scanning": "🔍 Расм қабул қилинди, QR код ўқилмоқда...",
         "qr_not_found": (
@@ -86,14 +142,27 @@ TEXTS = {
         "download_all_btn": "📥 Барчасини юклаб олиш ({count} та)",
         "downloading_all_progress": "⏳ Барча дарслар юкланмоқда ({current}/{total}): {name}...",
         "all_sent": "✅ «{title}» бўйича барча {total} та аудио дарс жўнатилди!",
+        "info": (
+            "ℹ️ **Habib Academy Bot**\n\n"
+            "Ушбу бот «Мифтаҳул Арабийя» араб тили дарслиги учун мўлжалланган.\n"
+            "Китобдаги QR код расмини жўнатсангиз, бот Google Drive'дан керакли аудио дарсликларни "
+            "автоматик топиб, сизга аудио форматида тақдим этади.\n\n"
+            "📌 **Буйруқлар:**\n"
+            "/start — Ботни қайта ишга тушириш\n"
+            "/lang — Мулоқот тилини ўзгартириш\n"
+            "/info — Бот ҳақида маълумот"
+        ),
     },
+
+    # 4. Русский
     "ru": {
         "welcome": "Здравствуйте! Добро пожаловать в бот Habib Academy.\n\nПожалуйста, выберите язык:",
         "lang_chosen": (
             "✅ Выбран русский язык.\n\n"
             "📖 Отправьте фото QR-кода аудио из книги «Мифтахуль Арабийя», "
             "и я пришлю вам аудиофайл урока.\n\n"
-            "🔄 Чтобы изменить язык: /lang"
+            "🔄 Изменить язык: /lang\n"
+            "ℹ️ О боте: /info"
         ),
         "scanning": "🔍 Фото получено, сканирую QR-код...",
         "qr_not_found": (
@@ -111,14 +180,27 @@ TEXTS = {
         "download_all_btn": "📥 Скачать все ({count} аудио)",
         "downloading_all_progress": "⏳ Отправка всех уроков ({current}/{total}): {name}...",
         "all_sent": "✅ Все {total} аудиоуроков по «{title}» успешно отправлены!",
+        "info": (
+            "ℹ️ **Habib Academy Bot**\n\n"
+            "Этот бот создан для учебника арабского языка «Мифтахуль Арабийя».\n"
+            "Отправьте фото QR-кода из книги, и бот автоматически загрузит аудиоуроки с Google Drive "
+            "в удобном аудиоформате.\n\n"
+            "📌 **Команды:**\n"
+            "/start — Перезапустить бота\n"
+            "/lang — Сменить язык\n"
+            "/info — Информация о боте"
+        ),
     },
+
+    # 5. English
     "en": {
         "welcome": "Welcome! Welcome to Habib Academy bot.\n\nPlease choose your language:",
         "lang_chosen": (
             "✅ English selected.\n\n"
             "📖 Send a photo of the audio QR code from the 'Miftahul Arabiyya' textbook, "
             "and I will send you the audio lesson.\n\n"
-            "🔄 To change language: /lang"
+            "🔄 Change language: /lang\n"
+            "ℹ️ About bot: /info"
         ),
         "scanning": "🔍 Photo received, scanning QR code...",
         "qr_not_found": (
@@ -136,14 +218,27 @@ TEXTS = {
         "download_all_btn": "📥 Download All ({count} audios)",
         "downloading_all_progress": "⏳ Uploading all lessons ({current}/{total}): {name}...",
         "all_sent": "✅ All {total} audio lessons for '{title}' uploaded!",
+        "info": (
+            "ℹ️ **Habib Academy Bot**\n\n"
+            "This bot is designed for the 'Miftahul Arabiyya' Arabic textbook.\n"
+            "Send a photo of any audio QR code from the book, and the bot will fetch the audio "
+            "lessons from Google Drive and send them to you directly.\n\n"
+            "📌 **Commands:**\n"
+            "/start — Restart bot\n"
+            "/lang — Change language\n"
+            "/info — Information about the bot"
+        ),
     },
+
+    # 6. العربية
     "ar": {
         "welcome": "أهلاً وسهلاً بكم في بوت Habib Academy.\n\nيرجى اختيار لغتكم المفضلة:",
         "lang_chosen": (
             "✅ تم اختيار اللغة العربية.\n\n"
             "📖 أرسل صورة رمز QR للصوتيات من كتاب «مفتاح العربية»، "
             "وسأقوم بتحميل الملف الصوتي وإرساله إليك.\n\n"
-            "🔄 لتغيير اللغة: /lang"
+            "🔄 لتغيير اللغة: /lang\n"
+            "ℹ️ معلومات البوت: /info"
         ),
         "scanning": "🔍 تم استلام الصورة، جاري مسح رمز QR...",
         "qr_not_found": (
@@ -161,6 +256,16 @@ TEXTS = {
         "download_all_btn": "📥 تحميل الكل ({count} ملفات)",
         "downloading_all_progress": "⏳ جاري إرسال الدروس ({current}/{total}): {name}...",
         "all_sent": "✅ تم إرسال جميع الدروس الصوتية ({total}) لقسم «{title}»!",
+        "info": (
+            "ℹ️ **بوت Habib Academy**\n\n"
+            "تم تصميم هذا البوت لكتاب «مفتاح العربية» لتعليم اللغة العربية.\n"
+            "أرسل صورة أي رمز QR من الكتاب وسيقوم البوت تلقائياً بتنزيل الدروس الصوتية "
+            "من Google Drive وإرسالها لك مباشرة.\n\n"
+            "📌 **الأوامر:**\n"
+            "/start — إعادة تشغيل البوت\n"
+            "/lang — تغيير اللغة\n"
+            "/info — معلومات حول البوت"
+        ),
     },
 }
 
@@ -172,6 +277,7 @@ def get_text(user_id: int, key: str, **kwargs) -> str:
 def get_language_keyboard() -> InlineKeyboardMarkup:
     buttons = [
         [InlineKeyboardButton(text="🇺🇿 O'zbekcha (Lotin)", callback_data="setlang_uz_lat")],
+        [InlineKeyboardButton(text="🇺🇿 Özbekça (Yangi)", callback_data="setlang_uz_new")],
         [InlineKeyboardButton(text="🇺🇿 Ўзбекча (Кирилл)", callback_data="setlang_uz_cyr")],
         [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="setlang_ru")],
         [InlineKeyboardButton(text="🇬🇧 English", callback_data="setlang_en")],
@@ -180,7 +286,6 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def get_folder_keyboard(folder_id: str, file_list: list[tuple[str, str]], lang: str) -> InlineKeyboardMarkup:
-    """Audio fayllar ro'yxatini ixcham tugmalar ko'rinishida chiqaradi"""
     buttons = []
     row = []
     for fid, name in file_list:
@@ -192,7 +297,6 @@ def get_folder_keyboard(folder_id: str, file_list: list[tuple[str, str]], lang: 
     if row:
         buttons.append(row)
 
-    # "Barchasini yuklab olish" tugmasi
     dl_all_text = TEXTS.get(lang, TEXTS["uz_lat"])["download_all_btn"].format(count=len(file_list))
     buttons.append([InlineKeyboardButton(text=dl_all_text, callback_data=f"dlall_{folder_id}")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -208,19 +312,15 @@ def decode_qr(image_bytes: bytes) -> str | None:
         return None
 
     detector = cv2.QRCodeDetector()
-
-    # 1. Asl rangli tasvir
     data, _, _ = detector.detectAndDecode(img)
     if data:
         return data
 
-    # 2. Kulrang (Grayscale) tasvir
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     data, _, _ = detector.detectAndDecode(gray)
     if data:
         return data
 
-    # 3. Kontrast va Otsu binarizatsiya
     _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     data, _, _ = detector.detectAndDecode(thresh)
     if data:
@@ -233,11 +333,6 @@ def decode_qr(image_bytes: bytes) -> str | None:
 # GOOGLE DRIVE PAPKA VA FAYLLARNI QAYTA ISHLASH
 # ==========================================
 def parse_drive_url(url: str):
-    """
-    Google Drive havolasini tekshiradi:
-    - Agar papka bo'lsa: ('folder', folder_id, title, [(file_id, name), ...])
-    - Agar bitta fayl bo'lsa: ('file', file_id, title, [(file_id, name)])
-    """
     m = re.search(r'id=([a-zA-Z0-9_-]{25,})', url)
     if not m:
         m = re.search(r'/(?:folders|file/d)/([a-zA-Z0-9_-]{25,})', url)
@@ -263,14 +358,12 @@ def parse_drive_url(url: str):
         print("URL tekshirishda xatolik:", e)
         return "file", drive_id, "audio.mp3", [(drive_id, "audio.mp3")]
 
-    # Agar havola papkaga olib borsa
     if "folders" in final_url or "folders" in url:
         m_title = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE)
         folder_title = "Darslik"
         if m_title:
             folder_title = m_title.group(1).split("–")[0].split("-")[0].strip()
 
-        # Papka ichidagi audio fayllarni ajratib olamiz
         items = re.findall(r'data-id="([a-zA-Z0-9_-]{25,})"[^>]*data-tooltip="([^"]+)"', html)
         file_list = []
         for fid, tooltip in items:
@@ -284,7 +377,6 @@ def parse_drive_url(url: str):
 
         return "folder", drive_id, folder_title, file_list
     else:
-        # Bitta alohida fayl
         m_title = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE)
         file_title = "audio.mp3"
         if m_title:
@@ -293,10 +385,6 @@ def parse_drive_url(url: str):
 
 
 def download_drive_file(file_id: str, output_path: str) -> bool:
-    """
-    Google Drive faylini to'g'ridan-to'g'ri oqim (stream) orqali yuklab oladi.
-    2024-2026 Google Drive o'zgarishlariga to'liq mos keladi.
-    """
     download_urls = [
         f"https://drive.usercontent.google.com/download?id={file_id}&export=download&authuser=0",
         f"https://drive.google.com/uc?id={file_id}&export=download",
@@ -345,6 +433,15 @@ async def cmd_lang(message: Message):
     )
 
 
+@dp.message(Command("info", "help"))
+async def cmd_info(message: Message):
+    user_id = message.from_user.id
+    await message.answer(
+        get_text(user_id, "info"),
+        parse_mode="Markdown"
+    )
+
+
 @dp.callback_query(F.data.startswith("setlang_"))
 async def cb_set_language(callback: CallbackQuery):
     lang_code = callback.data.split("_", 1)[1]
@@ -355,7 +452,6 @@ async def cb_set_language(callback: CallbackQuery):
 
 
 async def process_drive_url(user_id: int, url: str, status_msg: Message):
-    """Google Drive havolasini ochadi va bitta yoki ko'p faylli ekaniga qarab foydalanuvchiga taqdim etadi"""
     loop = asyncio.get_event_loop()
     kind, item_id, title, files = await loop.run_in_executor(None, parse_drive_url, url)
 
@@ -363,7 +459,6 @@ async def process_drive_url(user_id: int, url: str, status_msg: Message):
         await status_msg.edit_text(get_text(user_id, "download_error"))
         return
 
-    # Agar bir nechta audio fayllar mavjud bo'lsa (Masalan: Unit 1 papkasi)
     if kind == "folder" and len(files) > 1:
         folder_cache[item_id] = files
         for fid, name in files:
@@ -375,7 +470,6 @@ async def process_drive_url(user_id: int, url: str, status_msg: Message):
         await status_msg.edit_text(folder_text, reply_markup=keyboard, parse_mode="Markdown")
         return
 
-    # Agar bitta dona audio fayl bo'lsa (yoki papkada faqat 1 ta audio bo'lsa)
     single_fid, single_name = files[0]
     file_names_cache[single_fid] = single_name
     await status_msg.edit_text(get_text(user_id, "downloading"))
@@ -444,9 +538,6 @@ async def handle_direct_link(message: Message):
     await process_drive_url(user_id, message.text.strip(), status_msg)
 
 
-# ==========================================
-# ALOHIDA BITTA AUDIO YUKLASH TUGMASI (dl_)
-# ==========================================
 @dp.callback_query(F.data.startswith("dl_"))
 async def cb_download_single(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -478,9 +569,6 @@ async def cb_download_single(callback: CallbackQuery):
             os.remove(temp_filepath)
 
 
-# ==========================================
-# BARCHASINI YUKLASH TUGMASI (dlall_)
-# ==========================================
 @dp.callback_query(F.data.startswith("dlall_"))
 async def cb_download_all(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -488,7 +576,6 @@ async def cb_download_all(callback: CallbackQuery):
     files = folder_cache.get(folder_id)
 
     if not files:
-        # Agar cache tozalanib ketgan bo'lsa qayta o'qiymiz
         folder_url = f"https://drive.google.com/drive/folders/{folder_id}"
         loop = asyncio.get_event_loop()
         _, _, _, files = await loop.run_in_executor(None, parse_drive_url, folder_url)
@@ -526,10 +613,25 @@ async def cb_download_all(callback: CallbackQuery):
                 if os.path.exists(temp_filepath):
                     os.remove(temp_filepath)
         
-        # Telegram spam limitiga tushmaslik uchun qisqa tanaffus
         await asyncio.sleep(0.5)
 
     await status_msg.delete()
+
+
+# ==========================================
+# MENYU BUYRUQLARINI O'RNATISH (SET COMMANDS)
+# ==========================================
+async def setup_bot_commands():
+    commands = [
+        BotCommand(command="start", description="Qayta ishga tushirish / Start"),
+        BotCommand(command="lang", description="Tilni o'zgartirish / Change language"),
+        BotCommand(command="info", description="Bot haqida ma'lumot / Information"),
+    ]
+    try:
+        await bot.set_my_commands(commands)
+        print("✅ Telegram Menyu buyruqlari o'rnatildi.")
+    except Exception as e:
+        print(f"Menyu o'rnatishda xatolik: {e}")
 
 
 # ==========================================
@@ -557,6 +659,7 @@ async def start_web_server():
 async def main():
     print("🚀 Habib Academy Bot ishga tushirilmoqda...")
     await start_web_server()
+    await setup_bot_commands()
     await dp.start_polling(bot)
 
 
